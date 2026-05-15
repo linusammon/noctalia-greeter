@@ -8,8 +8,8 @@
 #include "system/vt_manager.h"
 #include "ui/login_view.h"
 
-#include <atomic>
 #include <algorithm>
+#include <atomic>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
@@ -22,45 +22,45 @@
 
 namespace {
 
-std::atomic<bool> g_running{true};
+  std::atomic<bool> g_running{true};
 
-void signalHandler(int signal) {
-  if (signal == SIGINT || signal == SIGTERM) {
-    g_running = false;
-  }
-}
-
-struct Options {
-  bool debug = false;
-  bool help = false;
-};
-
-Options parseOptions(int argc, char** argv) {
-  Options options;
-  for (int i = 1; i < argc; ++i) {
-    if (std::strcmp(argv[i], "--debug") == 0) {
-      options.debug = true;
-    } else if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0) {
-      options.help = true;
-    } else {
-      std::fprintf(stderr, "error: unknown option: %s\n", argv[i]);
-      options.help = true;
+  void signalHandler(int signal) {
+    if (signal == SIGINT || signal == SIGTERM) {
+      g_running = false;
     }
   }
-  return options;
-}
 
-void printHelp() {
-  std::puts("Usage: noctalia-greeter [OPTIONS]\n"
-            "\n"
-            "Options:\n"
-            "  --debug      Run inside the current graphical session; skip VT switch and session handoff\n"
-            "  -h, --help   Show this help message");
-}
+  struct Options {
+    bool debug = false;
+    bool help = false;
+  };
 
-template <typename T> const T* firstOrNull(const std::vector<T>& values) {
-  return values.empty() ? nullptr : &values.front();
-}
+  Options parseOptions(int argc, char** argv) {
+    Options options;
+    for (int i = 1; i < argc; ++i) {
+      if (std::strcmp(argv[i], "--debug") == 0) {
+        options.debug = true;
+      } else if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0) {
+        options.help = true;
+      } else {
+        std::fprintf(stderr, "error: unknown option: %s\n", argv[i]);
+        options.help = true;
+      }
+    }
+    return options;
+  }
+
+  void printHelp() {
+    std::puts("Usage: noctalia-greeter [OPTIONS]\n"
+              "\n"
+              "Options:\n"
+              "  --debug      Run inside the current graphical session; skip VT switch and session handoff\n"
+              "  -h, --help   Show this help message");
+  }
+
+  template <typename T> const T* firstOrNull(const std::vector<T>& values) {
+    return values.empty() ? nullptr : &values.front();
+  }
 
 } // namespace
 

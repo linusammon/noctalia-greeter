@@ -1,11 +1,10 @@
 #include "render/scene/input_area.h"
 
-#include "cursor-shape-v1-client-protocol.h"
-
 namespace {
 
   constexpr std::uint32_t kMouseButtonBase = BTN_MOUSE;
   constexpr std::uint32_t kMaxTrackedMouseButtons = 32;
+  constexpr std::uint32_t kCursorShapePointer = 3;
 
 } // namespace
 
@@ -52,7 +51,7 @@ void InputArea::setOnAxisHandler(AxisCallback callback) { m_onAxis = std::move(c
 void InputArea::setOnClick(PointerCallback callback) {
   m_onClick = std::move(callback);
   if (m_onClick && m_cursorShape == 0) {
-    m_cursorShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER;
+    m_cursorShape = kCursorShapePointer;
   }
 }
 

@@ -3,7 +3,6 @@
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
-#include "cursor-shape-v1-client-protocol.h"
 #include "render/core/render_styles.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
@@ -32,6 +31,7 @@ namespace {
   constexpr Logger kLog("select-dropdown-popup");
   constexpr float kMenuPadding = Style::spaceXs;
   constexpr std::int32_t kShadowSafetyPadding = 2;
+  constexpr std::uint32_t kCursorShapePointer = 3;
 
   Color resolved(ColorRole role, float alpha = 1.0f) { return colorForRole(role, alpha); }
 
@@ -300,7 +300,7 @@ void SelectDropdownPopup::buildScene(const DropdownRequest& request) {
     m_optionViews.push_back(OptionView{.background = rowBgPtr, .label = labelPtr, .checkGlyph = checkPtr});
 
     auto area = std::make_unique<InputArea>();
-    area->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+    area->setCursorShape(kCursorShapePointer);
     area->setPosition(0.0f, rowY);
     area->setFrameSize(m_menuWidth, m_optionHeight);
     area->setOnEnter([this, i](const InputArea::PointerData& /*data*/) {

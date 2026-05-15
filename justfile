@@ -19,5 +19,11 @@ run: build
 check: build
     ./{{build-dir}}/noctalia-greeter --help
 
+test: build
+    meson test -C {{build-dir}}
+
+format:
+    clang-format -i $(find src tests -type f \( -name '*.cpp' -o -name '*.h' \))
+
 clean:
     meson compile -C {{build-dir}} --clean

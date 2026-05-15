@@ -8,16 +8,16 @@
 
 namespace noctalia::platform {
 
-struct FrameState {
-  bool authenticated = false;
-  std::string status;
-};
+  struct FrameState {
+    bool authenticated = false;
+    std::string status;
+  };
 
-class Platform {
-public:
-  virtual ~Platform() = default;
-  virtual bool initialize() = 0;
-  virtual int run(ui::LoginView& view, std::function<void(const ui::LoginRequest&)> submit) = 0;
-};
+  class Platform {
+  public:
+    virtual ~Platform() = default;
+    virtual bool initialize() = 0;
+    virtual int run(ui::LoginView& view, std::function<void(const ui::LoginRequest&)> submit) = 0;
+  };
 
 } // namespace noctalia::platform

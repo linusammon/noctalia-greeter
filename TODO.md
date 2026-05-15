@@ -18,16 +18,17 @@
 
 ## UI And Rendering
 
-- [ ] Replace immediate-mode UI state with shell-like scene nodes and input areas.
-- [ ] Wire the login screen to the copied `noctalia-shell` `RenderContext`, scene nodes, and control classes.
+- [ ] Replace immediate-mode UI state with scene nodes and input areas.
+- [ ] Wire the login screen to the local `RenderContext`, scene nodes, and control classes.
+- [x] Route greeter rounded-rect drawing through the copied rect shader/program.
 - [ ] Add proper popup clipping, keyboard navigation, and scrollable session/user menus.
 - [x] Cache Pango/Cairo text textures instead of regenerating every frame.
 - [ ] Add a real cursor/caret, password reveal toggle, caps-lock indicator, and loading state.
 - [ ] Support HiDPI/content scaling consistently across debug and DRM backends.
 - [x] Load Noctalia palette/assets through a small resource-path helper instead of cwd-relative paths.
-- [x] Use bundled Noctalia shell Tabler glyph assets for icons.
-- [x] Use the Noctalia shell logo as the avatar/brand fallback.
-- [x] Copy the `noctalia-shell` render stack into this project as local source.
+- [x] Use bundled Noctalia Tabler glyph assets for icons.
+- [x] Use the Noctalia logo as the avatar/brand fallback.
+- [x] Add the render stack to this project as local source.
 
 ## Packaging And Void Linux
 
@@ -39,8 +40,8 @@
 
 ## Quality
 
-- [ ] Add unit tests for session discovery and desktop-entry parsing.
+- [x] Add unit tests for session discovery and desktop-entry parsing.
 - [ ] Add tests for user enumeration filtering.
 - [ ] Add a debug-mode screenshot smoke test.
-- [ ] Add clang-format config matching `noctalia-shell`.
+- [x] Add clang-format config matching the rest of the Noctalia C++ code.
 - [ ] Add CI build coverage for Meson debug and release builds.

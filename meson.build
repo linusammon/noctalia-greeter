@@ -50,7 +50,9 @@ sources = files(
   'src/main.cpp',
   'src/platform/debug_wayland_platform.cpp',
   'src/platform/drm_platform.cpp',
+  'src/render/core/shader_program.cpp',
   'src/render/gl_renderer.cpp',
+  'src/render/programs/rect_program.cpp',
   'src/render/shader_program.cpp',
   'src/render/text_renderer.cpp',
   'src/render/glyph_registry.cpp',
@@ -58,6 +60,7 @@ sources = files(
   'src/session/session_registry.cpp',
   'src/system/user_registry.cpp',
   'src/system/vt_manager.cpp',
+  'src/ui/controls/input.cpp',
   'src/ui/login_view.cpp',
 )
 
@@ -82,6 +85,27 @@ executable('noctalia-greeter',
   ],
   install: true,
 )
+
+session_registry_test = executable('session-registry-test',
+  files(
+    'tests/session_registry_test.cpp',
+    'src/session/session_registry.cpp',
+  ),
+  include_directories: include_directories('src'),
+)
+
+test('session registry', session_registry_test)
+
+input_control_test = executable('input-control-test',
+  files(
+    'tests/input_control_test.cpp',
+    'src/ui/controls/input.cpp',
+  ),
+  include_directories: include_directories('src'),
+  dependencies: [xkbcommon_dep],
+)
+
+test('input control', input_control_test)
 
 install_data('data/pam/noctalia-greeter', install_dir: '/etc/pam.d')
 install_subdir('assets/fonts', install_dir: get_option('datadir') / 'noctalia-greeter')

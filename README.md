@@ -1,6 +1,6 @@
 # noctalia-greeter
 
-Standalone Noctalia greeter prototype for Linux. It uses the same broad rendering stack as `noctalia-shell`: Meson, C++20, EGL/GLES2, embedded shaders, Cairo/Pango text, and Tabler glyphs.
+Standalone Noctalia greeter prototype for Linux. It uses Meson, C++20, EGL/GLES2, embedded shaders, Cairo/Pango text, and Tabler glyphs.
 
 ## Build
 

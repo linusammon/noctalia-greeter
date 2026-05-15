@@ -1,177 +1,70 @@
 #pragma once
 
-#include "core/timer_manager.h"
-#include "render/core/renderer.h"
-#include "render/scene/node.h"
-#include "ui/signal.h"
-#include "ui/style.h"
-
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <string_view>
-#include <vector>
 
-class ClipboardService;
-class GlyphNode;
-class InputArea;
-class Label;
-class RectNode;
-class Renderer;
+namespace noctalia::ui {
 
-class Input : public Node {
-public:
-  enum class PasswordMaskStyle : std::uint8_t {
-    CircleFilled = 0,
-    RandomIcons = 1,
+  enum KeyModifier : std::uint32_t {
+    KeyModifierShift = 1u << 0u,
+    KeyModifierCtrl = 1u << 1u,
+    KeyModifierAlt = 1u << 2u,
+    KeyModifierSuper = 1u << 3u,
   };
 
-  Input();
+  class Input {
+  public:
+    void setPlaceholder(std::string placeholder);
+    void setPasswordMode(bool enabled) noexcept;
+    void setFocused(bool focused) noexcept;
+    void setValue(std::string value);
 
-  void setValue(std::string_view value);
-  void setPlaceholder(std::string_view placeholder);
-  void setFontSize(float size);
-  void setControlHeight(float height);
-  void setHorizontalPadding(float padding);
-  void setClearButtonEnabled(bool enabled);
-  void setPasswordMode(bool enabled);
-  void setInvalid(bool invalid);
-  void setFrameVisible(bool visible);
-  /// When the frame is hidden, treat the field as sitting on a solid Primary fill (e.g. segmented control center).
-  void setEmbeddedOnSolidPrimary(bool embedded);
-  void setBold(bool bold);
-  void setMinLayoutWidth(float width);
-  void setTextAlign(TextAlign align);
-  void setOnChange(std::function<void(const std::string&)> callback);
-  void setOnSubmit(std::function<void(const std::string&)> callback);
-  void setOnKeyEvent(std::function<bool(std::uint32_t sym, std::uint32_t modifiers)> callback);
-  void setOnFocusLoss(std::function<void()> callback);
-  void setEnabled(bool enabled);
-  [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
-  void selectAll();
-  void moveCaretLeft(bool shift = false);
-  void moveCaretRight(bool shift = false);
+    void insertText(std::string_view text);
+    void backspace();
+    void deleteForward();
+    void clear();
+    bool handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers);
+    void selectAll();
+    void clearSelection();
+    void moveCaretLeft(bool shift = false, bool word = false);
+    void moveCaretRight(bool shift = false, bool word = false);
+    void moveCaretHome(bool shift = false);
+    void moveCaretEnd(bool shift = false);
 
-  // Set once at application startup; all Input instances use this for Ctrl+C/X/V.
-  static void setClipboardService(ClipboardService* clipboard) noexcept;
-  /// Submit invokes onSubmit only when this matcher returns true (Application wires ConfigService validate keybinds).
-  static void setValidateKeyMatcher(std::function<bool(std::uint32_t sym, std::uint32_t modifiers)> matcher) noexcept;
-  static void setPasswordMaskStyle(PasswordMaskStyle style) noexcept;
-  void clearSelection();
+    [[nodiscard]] const std::string& value() const noexcept { return m_value; }
+    [[nodiscard]] const std::string& placeholder() const noexcept { return m_placeholder; }
+    [[nodiscard]] bool passwordMode() const noexcept { return m_passwordMode; }
+    [[nodiscard]] bool focused() const noexcept { return m_focused; }
+    [[nodiscard]] bool empty() const noexcept { return m_value.empty(); }
+    [[nodiscard]] std::string displayValue() const;
+    [[nodiscard]] std::size_t glyphCount() const noexcept;
+    [[nodiscard]] std::size_t cursorGlyphIndex() const noexcept;
+    [[nodiscard]] std::size_t selectionStartGlyphIndex() const noexcept;
+    [[nodiscard]] std::size_t selectionEndGlyphIndex() const noexcept;
+    [[nodiscard]] bool hasSelection() const noexcept;
 
-  [[nodiscard]] const std::string& value() const noexcept { return m_value; }
-  [[nodiscard]] InputArea* inputArea() const noexcept { return m_inputArea; }
-  [[nodiscard]] bool invalid() const noexcept { return m_invalid; }
+  private:
+    [[nodiscard]] std::size_t selectionStart() const noexcept;
+    [[nodiscard]] std::size_t selectionEnd() const noexcept;
+    void deleteSelection();
+    [[nodiscard]] std::size_t glyphIndexForByte(std::size_t byteOffset) const noexcept;
+    [[nodiscard]] std::size_t previousWordStartForByteOffset(std::size_t offset) const;
+    [[nodiscard]] std::size_t nextWordStartForByteOffset(std::size_t offset) const;
+    [[nodiscard]] std::size_t nextWordEndForByteOffset(std::size_t offset) const;
 
-private:
-  enum class EditCoalesceKind : std::uint8_t {
-    None = 0,
-    Typing = 1,
-    Discrete = 2,
+    static bool isWordCodepoint(const std::string& text, std::size_t byteOffset);
+    static std::size_t nextCharPos(const std::string& text, std::size_t byteOffset);
+    static std::size_t prevCharPos(const std::string& text, std::size_t byteOffset);
+    static std::string utf32ToUtf8(std::uint32_t codepoint);
+
+    std::string m_value;
+    std::string m_placeholder;
+    std::size_t m_cursorPos = 0;
+    std::size_t m_selectionAnchor = 0;
+    bool m_passwordMode = false;
+    bool m_focused = false;
   };
 
-  struct EditSnapshot {
-    std::string value;
-    std::size_t cursorPos = 0;
-    std::size_t selectionAnchor = 0;
-
-    bool operator==(const EditSnapshot&) const = default;
-  };
-
-  void doLayout(Renderer& renderer) override;
-  LayoutSize doMeasure(Renderer& renderer, const LayoutConstraints& constraints) override;
-  void handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool preedit = false);
-  void applyVisualState();
-  void updateDisplayText();
-  void updateInteractiveGeometry();
-  void clearFromButton();
-  void updateCursorVisibility();
-  void revealCursor();
-  void startCursorBlink();
-  void stopCursorBlink();
-  void ensureCursorVisible();
-  void clampScrollOffset();
-  void selectWordAtByteOffset(std::size_t offset);
-  [[nodiscard]] std::size_t wordStartForByteOffset(std::size_t offset) const;
-  [[nodiscard]] std::size_t wordEndForByteOffset(std::size_t offset) const;
-  [[nodiscard]] std::size_t previousWordStartForByteOffset(std::size_t offset) const;
-  [[nodiscard]] std::size_t nextWordStartForByteOffset(std::size_t offset) const;
-  [[nodiscard]] std::size_t nextWordEndForByteOffset(std::size_t offset) const;
-  [[nodiscard]] float textViewportWidth() const noexcept;
-  [[nodiscard]] bool clearButtonVisible() const noexcept;
-  [[nodiscard]] float clearButtonHitWidth() const noexcept;
-  [[nodiscard]] float clearButtonTextReserveWidth() const noexcept;
-  [[nodiscard]] bool hasSelection() const noexcept;
-  [[nodiscard]] std::size_t selectionStart() const noexcept;
-  [[nodiscard]] std::size_t selectionEnd() const noexcept;
-  [[nodiscard]] bool isReadOnlyVisual() const noexcept;
-  [[nodiscard]] EditSnapshot currentEditSnapshot() const;
-  void deleteSelection();
-  void clearEditHistory();
-  void resetUndoCoalescing();
-  void pushUndoSnapshot(EditCoalesceKind kind);
-  void noteTypingEditEnd();
-  bool undoEdit();
-  bool redoEdit();
-  bool restoreFromHistory(std::vector<EditSnapshot>& source, std::vector<EditSnapshot>& target);
-  void restoreEditSnapshot(const EditSnapshot& snapshot);
-  [[nodiscard]] std::size_t xToByteOffset(float localX) const;
-  [[nodiscard]] float stopXForByte(std::size_t bytePos) const;
-  void syncPasswordGlyphNodes(std::size_t count);
-
-  static std::size_t nextCharPos(const std::string& s, std::size_t pos);
-  static std::size_t prevCharPos(const std::string& s, std::size_t pos);
-  static std::string utf32ToUtf8(std::uint32_t codepoint);
-
-  RectNode* m_background = nullptr;
-  Node* m_textViewport = nullptr;
-  RectNode* m_selectionRect = nullptr;
-  Label* m_label = nullptr;
-  RectNode* m_cursor = nullptr;
-  InputArea* m_inputArea = nullptr;
-  InputArea* m_clearButtonArea = nullptr;
-  GlyphNode* m_clearButtonGlyph = nullptr;
-
-  std::string m_value;
-  std::string m_placeholder;
-  std::size_t m_cursorPos = 0;
-  std::size_t m_selectionAnchor = 0;
-  std::size_t m_preeditStart = 0;
-  std::size_t m_preeditLen = 0;
-  std::vector<EditSnapshot> m_undoStack;
-  std::vector<EditSnapshot> m_redoStack;
-  EditCoalesceKind m_lastEditCoalesceKind = EditCoalesceKind::None;
-  std::chrono::steady_clock::time_point m_lastUndoRecordTime{};
-  std::size_t m_typingCoalesceCursorPos = 0;
-
-  std::vector<float> m_stopX;
-  std::vector<std::size_t> m_stopByte;
-  std::vector<GlyphNode*> m_passwordGlyphs;
-  float m_scrollOffset = 0.0f;
-  bool m_cursorBlinkVisible = true;
-  Timer m_cursorBlinkTimer;
-
-  std::function<void(const std::string&)> m_onChange;
-  std::function<void(const std::string&)> m_onSubmit;
-  std::function<bool(std::uint32_t, std::uint32_t)> m_onKeyEvent;
-  std::function<void()> m_onFocusLoss;
-  float m_fontSize = Style::fontSizeBody;
-  float m_controlHeight = Style::controlHeight;
-  float m_horizontalPadding = Style::spaceMd;
-  bool m_clearButtonEnabled = false;
-  bool m_passwordMode = false;
-  bool m_invalid = false;
-  bool m_frameVisible = true;
-  bool m_embeddedOnSolidPrimary = false;
-  bool m_enabled = true;
-  float m_minLayoutWidth = 0.0f;
-  float m_contentLeadSlack = 0.0f;
-  TextAlign m_textAlign = TextAlign::Start;
-  std::chrono::steady_clock::time_point m_lastPrimaryPressTime{};
-  float m_lastPrimaryPressX = 0.0f;
-  float m_lastPrimaryPressY = 0.0f;
-  bool m_hasLastPrimaryPress = false;
-  Signal<>::ScopedConnection m_paletteConn;
-};
+} // namespace noctalia::ui

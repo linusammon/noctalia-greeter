@@ -1,6 +1,5 @@
 #include "ui/controls/select.h"
 
-#include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/core/render_styles.h"
 #include "render/scene/input_area.h"
@@ -23,6 +22,7 @@ namespace {
 
   constexpr float kMaxVisibleOptions = 6;
   constexpr float kPlaceholderAlpha = 0.68f;
+  constexpr std::uint32_t kCursorShapePointer = 3;
 
   Color resolved(ColorRole role, float alpha = 1.0f) { return colorForRole(role, alpha); }
 
@@ -49,7 +49,7 @@ Select::Select() {
 
   auto triggerArea = std::make_unique<InputArea>();
   triggerArea->setFocusable(true);
-  triggerArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+  triggerArea->setCursorShape(kCursorShapePointer);
   triggerArea->setOnEnter([this](const InputArea::PointerData& /*data*/) {
     applyVisualState();
     markPaintDirty();
