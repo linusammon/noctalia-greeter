@@ -7,6 +7,7 @@
 #include "greeter/appearance_config.h"
 #include "greeter/appearance_sync.h"
 #include "greeter/greeter_preferences.h"
+#include "greeter/greeter_sessions.h"
 #include "greeter/greeter_window.h"
 #include "render/core/texture_manager.h"
 #include "render/render_context.h"
@@ -70,37 +71,12 @@ Button::ButtonPalette userRowPalette() {
   };
 }
 
-std::string trim(std::string value) {
-  const auto begin = value.find_first_not_of(" \t\r\n");
-  if (begin == std::string::npos) {
-    return {};
-  }
-  const auto end = value.find_last_not_of(" \t\r\n");
-  return value.substr(begin, end - begin + 1);
-}
-
 bool parseColorWallpaperPath(std::string_view path, Color &out) {
   constexpr std::string_view kPrefix = "color:";
   if (!path.starts_with(kPrefix)) {
     return false;
   }
   return tryParseHexColor(path.substr(kPrefix.size()), out);
-}
-
-std::string sanitizeDesktopExec(const std::string &exec) {
-  std::istringstream stream(exec);
-  std::string token;
-  std::string out;
-  while (stream >> token) {
-    if (!token.empty() && token[0] == '%') {
-      continue;
-    }
-    if (!out.empty()) {
-      out.push_back(' ');
-    }
-    out += token;
-  }
-  return trim(out);
 }
 
 } // namespace
@@ -1083,46 +1059,7 @@ void GreeterSurface::loadUsers() {
 }
 
 void GreeterSurface::loadSessions() {
-  m_sessions.clear();
-  const std::array<std::filesystem::path, 2> dirs = {
-      "/usr/share/wayland-sessions",
-      "/usr/local/share/wayland-sessions",
-  };
-
-  for (const auto &dir : dirs) {
-    std::error_code ec;
-    if (!std::filesystem::exists(dir, ec) || ec) {
-      continue;
-    }
-    for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
-      if (ec || !entry.is_regular_file()) {
-        continue;
-      }
-      if (entry.path().extension() != ".desktop") {
-        continue;
-      }
-
-      std::ifstream in(entry.path());
-      std::string line;
-      std::string name;
-      std::string exec;
-      while (std::getline(in, line)) {
-        if (line.rfind("Name=", 0) == 0) {
-          name = trim(line.substr(5));
-        } else if (line.rfind("Exec=", 0) == 0) {
-          exec = sanitizeDesktopExec(line.substr(5));
-        }
-      }
-
-      if (!name.empty() && !exec.empty()) {
-        m_sessions.push_back(SessionOption{.name = name, .command = exec});
-      }
-    }
-  }
-
-  if (m_sessions.empty()) {
-    m_sessions.push_back(SessionOption{.name = "Shell", .command = "/bin/sh"});
-  }
+  m_sessions = greeter::discoverSessions();
   m_selectedSession = 0;
 }
 
@@ -1285,10 +1222,11 @@ void GreeterSurface::syncWallpaperTexture() {
 
 void GreeterSurface::loadPreferences() {
   const auto prefs = greeter::loadGreeterPreferences();
+  const auto initialSession = greeter::resolveInitialSessionName(prefs);
 
-  if (prefs.session.has_value()) {
+  if (initialSession.has_value()) {
     for (std::size_t i = 0; i < m_sessions.size(); ++i) {
-      if (m_sessions[i].name == *prefs.session) {
+      if (m_sessions[i].name == *initialSession) {
         m_selectedSession = i;
         break;
       }
@@ -1444,9 +1382,8 @@ void GreeterSurface::rebuildFocusRing() {
       if (row == nullptr || row->inputArea() == nullptr) {
         continue;
       }
-      m_focusRing.push_back({row->inputArea(), [this, i]() {
-                               enterPasswordStep(i);
-                             }});
+      m_focusRing.push_back(
+          {row->inputArea(), [this, i]() { enterPasswordStep(i); }});
     }
   }
 
@@ -1620,8 +1557,7 @@ bool GreeterSurface::handleNavigationKey(std::uint32_t sym,
 
   // Let the password field keep all of its editing/submit keys.
   InputArea *focused = InputArea::getFocused();
-  if (m_passwordField != nullptr &&
-      focused == m_passwordField->inputArea()) {
+  if (m_passwordField != nullptr && focused == m_passwordField->inputArea()) {
     return false;
   }
 
@@ -1874,7 +1810,8 @@ void GreeterSurface::buildMenu(const std::vector<std::string> &names,
 
     Label *labelPtr = labels[i];
     labelPtr->setPosition(x + Style::spaceMd,
-                          rowY + std::round((rowH - labelPtr->height()) * 0.5f));
+                          rowY +
+                              std::round((rowH - labelPtr->height()) * 0.5f));
 
     auto area = std::make_unique<InputArea>();
     auto *areaPtr = area.get();
@@ -1919,7 +1856,8 @@ void GreeterSurface::rebuildSchemeMenu() {
   if (!m_schemeMenuOpen || m_schemeNames.empty()) {
     return;
   }
-  buildMenu(m_schemeNames, m_selectedScheme, m_schemeSelectBox, /*upward=*/false,
+  buildMenu(m_schemeNames, m_selectedScheme, m_schemeSelectBox,
+            /*upward=*/false,
             /*rightAlign=*/true, /*zBase=*/60, m_schemeMenuPanel,
             m_schemeMenuRows, m_schemeMenuLabels, m_schemeMenuAreas,
             [this](std::size_t i) { selectScheme(i); });

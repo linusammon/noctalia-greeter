@@ -1,0 +1,83 @@
+#include "greeter/greeter_sessions.h"
+
+#include <array>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+
+namespace {
+
+std::string trim(std::string value) {
+  const auto begin = value.find_first_not_of(" \t\r\n");
+  if (begin == std::string::npos) {
+    return {};
+  }
+  const auto end = value.find_last_not_of(" \t\r\n");
+  return value.substr(begin, end - begin + 1);
+}
+
+std::string sanitizeDesktopExec(const std::string &exec) {
+  std::istringstream stream(exec);
+  std::string token;
+  std::string out;
+  while (stream >> token) {
+    if (!token.empty() && token[0] == '%') {
+      continue;
+    }
+    if (!out.empty()) {
+      out.push_back(' ');
+    }
+    out += token;
+  }
+  return trim(out);
+}
+
+} // namespace
+
+namespace greeter {
+
+std::vector<SessionOption> discoverSessions() {
+  std::vector<SessionOption> sessions;
+  const std::array<std::filesystem::path, 2> dirs = {
+      "/usr/share/wayland-sessions",
+      "/usr/local/share/wayland-sessions",
+  };
+
+  for (const auto &dir : dirs) {
+    std::error_code ec;
+    if (!std::filesystem::exists(dir, ec) || ec) {
+      continue;
+    }
+    for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
+      if (ec || !entry.is_regular_file()) {
+        continue;
+      }
+      if (entry.path().extension() != ".desktop") {
+        continue;
+      }
+
+      std::ifstream in(entry.path());
+      std::string line;
+      std::string name;
+      std::string exec;
+      while (std::getline(in, line)) {
+        if (line.rfind("Name=", 0) == 0) {
+          name = trim(line.substr(5));
+        } else if (line.rfind("Exec=", 0) == 0) {
+          exec = sanitizeDesktopExec(line.substr(5));
+        }
+      }
+
+      if (!name.empty() && !exec.empty()) {
+        sessions.push_back(SessionOption{.name = name, .command = exec});
+      }
+    }
+  }
+
+  if (sessions.empty()) {
+    sessions.push_back(SessionOption{.name = "Shell", .command = "/bin/sh"});
+  }
+  return sessions;
+}
+
+} // namespace greeter

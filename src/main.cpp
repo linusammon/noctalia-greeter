@@ -1,7 +1,11 @@
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "greeter/greeter.h"
+#include "greeter/greeter_preferences.h"
+#include "greeter/greeter_sessions.h"
 #include "wayland/wayland_client.h"
+
+#include <cstdio>
 
 #include <atomic>
 #include <csignal>
@@ -70,7 +74,23 @@ void signalHandler(int signum) {
 } // namespace
 
 int main(int argc, char *argv[]) {
+  if (argc >= 2 && std::strcmp(argv[1], "sessions") == 0) {
+    for (const greeter::SessionOption &session : greeter::discoverSessions()) {
+      std::printf("%s\n", session.name.c_str());
+    }
+    return 0;
+  }
+
   for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--session") == 0 ||
+        std::strcmp(argv[i], "--cmd") == 0) {
+      if (i + 1 >= argc) {
+        std::fputs("error: --session requires a session name\n", stderr);
+        return 1;
+      }
+      greeter::setCliDefaultSession(argv[++i]);
+      continue;
+    }
     if (std::strcmp(argv[i], "--version") == 0 ||
         std::strcmp(argv[i], "-v") == 0) {
       std::printf("noctalia-greeter %s\n", NOCTALIA_GREETER_VERSION);
@@ -92,13 +112,18 @@ int main(int argc, char *argv[]) {
         std::strcmp(argv[i], "-h") == 0) {
       std::puts(
           "Usage: noctalia-greeter [OPTIONS]\n"
+          "       noctalia-greeter sessions\n"
           "\n"
           "Run as a Wayland client under a compositor (e.g. cage).\n"
           "\n"
+          "Commands:\n"
+          "  sessions              List available session names and exit\n"
+          "\n"
           "Options:\n"
-          "  -h, --help       Show this help message\n"
-          "  -v, --version    Show version information\n"
-          "  --log-test       Write test lines to all log paths and exit\n"
+          "  -h, --help            Show this help message\n"
+          "  -v, --version         Show version information\n"
+          "  --log-test            Write test lines to all log paths and exit\n"
+          "  --session, --cmd NAME Default session (Wayland .desktop Name=)\n"
           "\n"
           "Environment:\n"
           "  GREETD_SOCK           Path to greetd Unix socket\n"
@@ -106,7 +131,8 @@ int main(int argc, char *argv[]) {
           "  NOCTALIA_GREETER_LOG  Log file path (overrides defaults)\n"
           "\n"
           "Greetd example:\n"
-          "  command = \"/usr/local/bin/noctalia-greeter-session\"\n"
+          "  command = \"/usr/local/bin/noctalia-greeter-session -- --session "
+          "niri\"\n"
           "  user = \"greeter\"\n"
           "\n"
           "For more information, visit https://noctalia.dev");

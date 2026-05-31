@@ -84,6 +84,12 @@ command = "/usr/local/bin/noctalia-greeter-session"
 user = "greeter"
 ```
 
+Optional default session (tuigreet-style `--cmd`); must match a Wayland session **Name** from the picker:
+
+```toml
+command = "/usr/local/bin/noctalia-greeter-session -- --session niri"
+```
+
 If your install prefix is different, use the installed path for `noctalia-greeter-session`.
 
 ### 4) Restart greetd
@@ -110,7 +116,7 @@ Meson installs the following (paths use your `prefix`, commonly `/usr/local`):
 
 **Runtime paths**:
 
-- `/var/lib/noctalia-greeter/`: synced appearance (`appearance.json`, `wallpaper.*`) and `greeter.conf` (session/scheme prefs)
+- `/var/lib/noctalia-greeter/`: synced appearance (`appearance.json`, `wallpaper.*`) and `greeter.conf` (session/scheme prefs; see below)
 - `/var/log/noctalia-greeter.log`, `/var/lib/noctalia-greeter/greeter.log`: logs (`just setup-log-dir`)
 
 **Environment overrides** (optional):
@@ -129,23 +135,45 @@ From **Settings -> Shell -> Security -> Noctalia Greeter -> Sync Now**, the shel
 2. Runs `pkexec noctalia-greeter-apply-appearance <staging-dir>` (admin prompt via polkit)
 3. Installs into `/var/lib/noctalia-greeter/` as root-owned, world-readable files (`0755` dir, `0644` data). No greetd user lookup.
 
-The greeter reads `appearance.json` on startup and adds a **Synced** entry to the color-scheme picker (built-in palettes keep solid backgrounds). When synced data is present, **Synced** is the default scheme. Session and color-scheme choices are read from and written to `/var/lib/noctalia-greeter/greeter.conf` (including when changed in the greeter UI). **Both packages must be installed** (shell v5 + greeter + polkit policy). After syncing, restart greetd or log out once to see the shell wallpaper and palette.
+The greeter reads `appearance.json` on startup and adds a **Synced** entry to the color-scheme picker (built-in palettes keep solid backgrounds). When synced data is present, **Synced** is the default scheme. Session and scheme preferences live in `/var/lib/noctalia-greeter/greeter.conf` (see below). **Both packages must be installed** (shell v5 + greeter + polkit policy). After syncing, restart greetd or log out once to see the shell wallpaper and palette.
 
-Example `greeter.conf` (values must match a discovered session **Name** and a listed scheme):
+### `greeter.conf`
+
+Simple `key = value` file (`#` comments). Values must match a discovered session **Name** (`.desktop` `Name=`, same as the picker label) and a listed scheme name.
+
+| Key | Set by | Purpose |
+|-----|--------|---------|
+| `greeter_user` | install setup | greetd account (logs); not used at runtime for sync |
+| `default_session` | you (config or `--session` CLI) | default session on the picker when the greeter starts |
+| `session` | greeter UI | last session picked in the picker (or via keybind) |
+| `scheme` | greeter UI | last color scheme picked |
+
+**Initial session** on startup: `--session` / `--cmd` → `default_session` → `session` (last used) → first discovered session.
+
+Example:
 
 ```ini
 greeter_user=greetd
-session="niri"
+default_session="niri"
+session="Hyprland"
 scheme="Synced"
 ```
+
+Opens with **niri** selected. If the user picks Hyprland, only `session` is updated; `default_session` stays **niri** for the next login. Without `default_session`, the greeter falls back to `session` (last used).
+
+List available session names (for `default_session` / `--session`):
+
+```bash
+noctalia-greeter sessions
+```
+
+`just install` runs `setup_greeter_system.sh`, which calls `noctalia-greeter-apply-appearance --setup-system` to create `greeter.conf` and give the greetd user write access so UI changes persist. Appearance sync does not depend on `greeter_user`.
 
 Manual test of the helper (as root), after staging a directory:
 
 ```bash
 sudo ./build/noctalia-greeter-apply-appearance /run/user/1000/noctalia-greeter-sync
 ```
-
-`just install` runs `setup_greeter_system.sh`, which calls `noctalia-greeter-apply-appearance --setup-system` to create `greeter.conf` and give the greetd user write access (UI changes persist). Optional `session` / `scheme` keys in that file set defaults. Appearance sync does not depend on `greeter_user`.
 
 ---
 

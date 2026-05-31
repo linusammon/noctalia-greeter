@@ -118,11 +118,11 @@ using KeyValueMap = std::map<std::string, std::string>;
   }
 
   out << "# noctalia-greeter greeter.conf\n";
-  out << "# session/scheme: defaults and UI changes (Wayland session Name=, "
-         "palette name)\n";
+  out << "# default_session: admin default (Wayland session Name=)\n";
+  out << "# session: last used (UI); scheme: color scheme name\n";
 
-  static constexpr const char *kPreferredOrder[] = {"greeter_user", "session",
-                                                    "scheme"};
+  static constexpr const char *kPreferredOrder[] = {
+      "greeter_user", "default_session", "session", "scheme"};
   for (const char *key : kPreferredOrder) {
     const auto it = map.find(key);
     if (it != map.end()) {
@@ -188,8 +188,32 @@ mapValue(const KeyValueMap &map, std::initializer_list<const char *> keys) {
 
 namespace greeter {
 
+namespace {
+
+std::optional<std::string> g_cliDefaultSession;
+
+} // namespace
+
 std::filesystem::path greeterConfPath() {
   return appearance::packageConfPath();
+}
+
+void setCliDefaultSession(std::optional<std::string> session) {
+  g_cliDefaultSession = std::move(session);
+}
+
+std::optional<std::string>
+resolveInitialSessionName(const GreeterPreferences &prefs) {
+  if (g_cliDefaultSession.has_value() && !g_cliDefaultSession->empty()) {
+    return g_cliDefaultSession;
+  }
+  if (prefs.defaultSession.has_value() && !prefs.defaultSession->empty()) {
+    return prefs.defaultSession;
+  }
+  if (prefs.session.has_value() && !prefs.session->empty()) {
+    return prefs.session;
+  }
+  return std::nullopt;
 }
 
 GreeterPreferences loadGreeterPreferences() {
@@ -197,8 +221,9 @@ GreeterPreferences loadGreeterPreferences() {
   const auto path = greeterConfPath();
   const KeyValueMap map = loadKeyValues(path);
 
-  prefs.session = mapValue(map, {"session", "session_name"});
-  prefs.scheme = mapValue(map, {"scheme", "scheme_name", "color_scheme"});
+  prefs.defaultSession = mapValue(map, {"default_session"});
+  prefs.session = mapValue(map, {"session"});
+  prefs.scheme = mapValue(map, {"scheme"});
   return prefs;
 }
 
@@ -255,10 +280,6 @@ bool installGreeterSystemLayout(const std::string_view greeterUser,
 bool saveGreeterPreferences(const GreeterPreferences &prefs) {
   const auto path = greeterConfPath();
   KeyValueMap map = loadKeyValues(path);
-
-  map.erase("session_name");
-  map.erase("scheme_name");
-  map.erase("color_scheme");
 
   if (prefs.session.has_value() && !prefs.session->empty()) {
     map["session"] = *prefs.session;

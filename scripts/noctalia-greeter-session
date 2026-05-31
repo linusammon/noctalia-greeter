@@ -23,10 +23,10 @@ echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset}"
 
 unset WAYLAND_DISPLAY
 if command -v dbus-run-session >/dev/null 2>&1; then
-  echo "launch: dbus-run-session cage -s -- ${GREETER_BIN}"
-  exec dbus-run-session -- env XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" cage -s -- "${GREETER_BIN}"
+  echo "launch: dbus-run-session cage -s -- ${GREETER_BIN} $*"
+  exec dbus-run-session -- env XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" cage -s -- "${GREETER_BIN}" "$@"
 fi
 
 echo "warn: dbus-run-session not found; starting cage without a session bus."
-echo "launch: cage -s -- ${GREETER_BIN}"
-exec env XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" cage -s -- "${GREETER_BIN}"
+echo "launch: cage -s -- ${GREETER_BIN} $*"
+exec env XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" cage -s -- "${GREETER_BIN}" "$@"

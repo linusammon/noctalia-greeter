@@ -10,6 +10,8 @@
 
 #include "greeter/appearance_config.h"
 
+#include "greeter/greeter_sessions.h"
+
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -170,13 +172,8 @@ private:
   std::ptrdiff_t m_menuHighlight = -1;
   bool m_initialFocusDone = false;
 
-  struct SessionOption {
-    std::string name;
-    std::string command;
-  };
-
   std::vector<std::string> m_users;
-  std::vector<SessionOption> m_sessions;
+  std::vector<greeter::SessionOption> m_sessions;
   std::size_t m_selectedUser = 0;
   std::size_t m_selectedSession = 0;
   bool m_userMenuOpen = false;
