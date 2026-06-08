@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=greetd_setup_lib.sh
 source "${SCRIPT_DIR}/greetd_setup_lib.sh"
 
-SESSION_BIN="${NOCTALIA_GREETER_SESSION_BIN:-/usr/local/bin/noctalia-greeter-session}"
+SESSION_BIN="$(find_session_bin)"
 SYNCED_DATA_DIR="/var/lib/noctalia-greeter"
 
 APPLY_APPEARANCE="$(find_apply_appearance || true)"

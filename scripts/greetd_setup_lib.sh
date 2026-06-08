@@ -4,6 +4,25 @@ _greetd_setup_lib_dir() {
   cd "$(dirname "${BASH_SOURCE[0]}")" && pwd
 }
 
+find_session_bin() {
+  local script_dir
+  script_dir="$(_greetd_setup_lib_dir)"
+
+  local candidate
+  for candidate in \
+    "${NOCTALIA_GREETER_SESSION_BIN:-}" \
+    /usr/bin/noctalia-greeter-session \
+    /usr/local/bin/noctalia-greeter-session \
+    "${script_dir}/noctalia-greeter-session" \
+    "${script_dir}/../build/noctalia-greeter-session"; do
+    if [[ -n "${candidate}" && -x "${candidate}" ]]; then
+      echo "${candidate}"
+      return 0
+    fi
+  done
+  echo "/usr/bin/noctalia-greeter-session"
+}
+
 find_apply_appearance() {
   local script_dir
   script_dir="$(_greetd_setup_lib_dir)"
@@ -11,8 +30,8 @@ find_apply_appearance() {
   local candidate
   for candidate in \
     "${NOCTALIA_GREETER_APPLY_APPEARANCE:-}" \
-    /usr/local/bin/noctalia-greeter-apply-appearance \
     /usr/bin/noctalia-greeter-apply-appearance \
+    /usr/local/bin/noctalia-greeter-apply-appearance \
     "${script_dir}/../build/noctalia-greeter-apply-appearance" \
     "${script_dir}/../build-user/noctalia-greeter-apply-appearance"; do
     if [[ -n "${candidate}" && -x "${candidate}" ]]; then

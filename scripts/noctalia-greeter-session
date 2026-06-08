@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-GREETER_BIN="${NOCTALIA_GREETER_BIN:-/usr/local/bin/noctalia-greeter}"
+_session_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+GREETER_BIN="${NOCTALIA_GREETER_BIN:-${_session_dir}/noctalia-greeter}"
 LOG_FILE="${NOCTALIA_GREETER_LOG:-/tmp/noctalia-greeter-greetd.log}"
 
 # Log cage and greeter to one file.
