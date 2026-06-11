@@ -14,6 +14,7 @@
   fontconfig,
   cairo,
   pango,
+  harfbuzz,
   libxkbcommon,
   libwebp,
   glib,
@@ -52,6 +53,7 @@ in
       fontconfig
       cairo
       pango
+      harfbuzz
       libxkbcommon
       libwebp
       glib
