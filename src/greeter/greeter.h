@@ -3,6 +3,7 @@
 #include "greetd/greetd_client.h"
 #include "render/gl_shared_context.h"
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -22,7 +23,7 @@ public:
   ~Greeter();
 
   bool initialize(WaylandClient &client);
-  int run(WaylandClient &client);
+  int run(WaylandClient &client, const std::atomic<bool> &shutdownRequested);
 
   void onKeyboardEvent(std::uint32_t sym, std::uint32_t utf32,
                        std::uint32_t modifiers, bool pressed, bool preedit);

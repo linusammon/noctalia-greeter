@@ -131,10 +131,12 @@ bool Greeter::initialize(WaylandClient &client) {
   return true;
 }
 
-int Greeter::run(WaylandClient &client) {
+int Greeter::run(WaylandClient &client,
+                 const std::atomic<bool> &shutdownRequested) {
   wl_display *display = client.display();
 
-  while (!m_exitRequested) {
+  while (!m_exitRequested &&
+         !shutdownRequested.load(std::memory_order_relaxed)) {
     client.repeatTick();
 
     if (client.flush() < 0) {

@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
 
   int result = 0;
   try {
-    result = greeter.run(client);
+    result = greeter.run(client, g_shutdownRequested);
   } catch (const std::exception &e) {
     kLog.error("fatal error in event loop: {}", e.what());
     result = 1;
