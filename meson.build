@@ -40,6 +40,7 @@ gobject_dep        = dependency('gobject-2.0')
 gio_dep            = dependency('gio-2.0')
 wayland_server_dep = dependency('wayland-server')
 wlroots_dep = dependency('wlroots-0.20')
+libinput_dep = dependency('libinput')
 
 egl_dep = dependency('egl', required: false)
 gles2_dep = dependency('glesv2', required: false)
@@ -260,6 +261,7 @@ executable('noctalia-greeter-compositor',
   ),
   dependencies: [
     wlroots_dep,
+    libinput_dep,
     wayland_server_dep,
     xkbcommon_dep,
   ],

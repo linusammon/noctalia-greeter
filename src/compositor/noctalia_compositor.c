@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <libinput.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,6 +14,7 @@
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #include <wlr/backend.h>
+#include <wlr/backend/libinput.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
@@ -32,8 +34,8 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
-#include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
+#include <xkbcommon/xkbcommon.h>
 
 #ifndef NOCTALIA_GREETER_INSTALLED_BINDIR
 #define NOCTALIA_GREETER_INSTALLED_BINDIR "/usr/local/bin"
@@ -815,7 +817,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
   struct greeter_server *server = keyboard->server;
   struct wlr_keyboard_key_event *event = data;
 
-  if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED && server->session != NULL) {
+  if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED &&
+      server->session != NULL) {
     const xkb_keysym_t *syms;
     int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
                                        event->keycode + 8, &syms);
@@ -823,7 +826,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
       xkb_keysym_t sym = syms[i];
       if (sym >= (xkb_keysym_t)XKB_KEY_XF86Switch_VT_1 &&
           sym <= (xkb_keysym_t)XKB_KEY_XF86Switch_VT_12) {
-        unsigned vt = (unsigned)(sym - (xkb_keysym_t)XKB_KEY_XF86Switch_VT_1 + 1);
+        unsigned vt =
+            (unsigned)(sym - (xkb_keysym_t)XKB_KEY_XF86Switch_VT_1 + 1);
         wlr_session_change_vt(server->session, vt);
         return;
       }
@@ -843,6 +847,33 @@ static void handle_keyboard_destroy(struct wl_listener *listener, void *data) {
   wl_list_remove(&keyboard->destroy.link);
   wl_list_remove(&keyboard->link);
   free(keyboard);
+}
+
+static void configure_libinput_touchpad(struct wlr_input_device *device) {
+  if (!wlr_input_device_is_libinput(device)) {
+    return;
+  }
+
+  struct libinput_device *libinput_dev = wlr_libinput_get_device_handle(device);
+  if (libinput_dev == NULL) {
+    return;
+  }
+  if (libinput_device_config_tap_get_finger_count(libinput_dev) == 0) {
+    return;
+  }
+
+  if (libinput_device_config_tap_set_enabled(
+          libinput_dev, LIBINPUT_CONFIG_TAP_ENABLED) != 0) {
+    wlr_log(WLR_INFO, "touchpad: failed to enable tap-to-click for %s",
+            device->name);
+    return;
+  }
+
+  libinput_device_config_tap_set_button_map(libinput_dev,
+                                            LIBINPUT_CONFIG_TAP_MAP_LRM);
+  libinput_device_config_tap_set_drag_enabled(libinput_dev,
+                                              LIBINPUT_CONFIG_DRAG_ENABLED);
+  wlr_log(WLR_INFO, "touchpad: enabled tap-to-click for %s", device->name);
 }
 
 static void add_keyboard(struct greeter_server *server,
@@ -885,6 +916,10 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
     caps |= WL_SEAT_CAPABILITY_KEYBOARD;
     break;
   case WLR_INPUT_DEVICE_POINTER:
+    configure_libinput_touchpad(device);
+    wlr_cursor_attach_input_device(server->cursor, device);
+    caps |= WL_SEAT_CAPABILITY_POINTER;
+    break;
   case WLR_INPUT_DEVICE_TOUCH:
   case WLR_INPUT_DEVICE_TABLET:
     wlr_cursor_attach_input_device(server->cursor, device);
