@@ -2615,9 +2615,10 @@ static bool dir_has_cursor_theme(const char* dir) {
   return found;
 }
 
-// accepts either an icon directory or a package/prefix root containing share/icons
+// accepts either an icon directory or a package/prefix root containing share/icons;
+// colon-separated lists are passed through untouched
 static void resolve_cursor_path(char* path, size_t path_size) {
-  if (dir_has_cursor_theme(path)) {
+  if (strchr(path, ':') != NULL || dir_has_cursor_theme(path)) {
     return;
   }
   char nested[PATH_MAX];

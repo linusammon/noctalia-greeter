@@ -146,7 +146,7 @@ size = 24
 path = "/usr/share/icons"
 ```
 
-If the path contains no cursor theme directory (`<path>/*/cursors`), the greeter also tries `<path>/share/icons`, so a package or prefix root (such as a Nix store path) works too. If neither contains the theme, a warning is logged and the path is used as given.
+If the path contains no cursor theme (no `<path>/*/cursors` directory, for any theme name), the greeter also tries `<path>/share/icons`, so a package or prefix root (such as a Nix store path) works too. If neither contains any cursor theme, an error is logged and the path is used as given. A colon-separated list of directories is used as is, without this check.
 
 The path must be readable by the greetd session user. A cursor theme installed only in your personal home directory is normally unavailable to the greeter.
 
