@@ -5,6 +5,7 @@
 #include "greeter/greeter_config_io.h"
 
 #include <ctype.h>
+#include <dirent.h>
 #include <libinput.h>
 #include <limits.h>
 #include <signal.h>
@@ -14,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <sys/wait.h>
 #include <syslog.h>
@@ -2588,6 +2590,45 @@ static void cleanup_server_resources(struct greeter_server* server) {
   }
 }
 
+static bool dir_exists(const char* path) {
+  struct stat st;
+  return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+// true if any <dir>/*/cursors exists
+static bool dir_has_cursor_theme(const char* dir) {
+  DIR* d = opendir(dir);
+  if (d == NULL) {
+    return false;
+  }
+  char probe[PATH_MAX];
+  bool found = false;
+  const struct dirent* entry;
+  while (!found && (entry = readdir(d)) != NULL) {
+    if (entry->d_name[0] == '.') {
+      continue;
+    }
+    found =
+        snprintf(probe, sizeof(probe), "%s/%s/cursors", dir, entry->d_name) < (int)sizeof(probe) && dir_exists(probe);
+  }
+  closedir(d);
+  return found;
+}
+
+// accepts either an icon directory or a package/prefix root containing share/icons
+static void resolve_cursor_path(char* path, size_t path_size) {
+  if (dir_has_cursor_theme(path)) {
+    return;
+  }
+  char nested[PATH_MAX];
+  if (snprintf(nested, sizeof(nested), "%s/share/icons", path) < (int)sizeof(nested) && dir_has_cursor_theme(nested)) {
+    wlr_log(WLR_INFO, "cursor path: using %s", nested);
+    snprintf(path, path_size, "%s", nested);
+    return;
+  }
+  wlr_log(WLR_ERROR, "cursor path '%s' (or its share/icons) has no cursor theme; using it as given", path);
+}
+
 int main(int argc, char** argv) {
   compositor_init_logging();
   wlr_log_init(compositor_wlr_log_importance(), compositor_wlr_log);
@@ -2663,6 +2704,7 @@ int main(int argc, char** argv) {
   }
 
   if (server.cursor_path[0] != '\0') {
+    resolve_cursor_path(server.cursor_path, sizeof(server.cursor_path));
     setenv("XCURSOR_PATH", server.cursor_path, 1);
   }
 

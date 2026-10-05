@@ -59,7 +59,7 @@ in
     // {
       description = ''
         Cursor theme package. Defaults settings.cursor.path to
-        "''${package}/share/icons"; set it directly if needed.
+        the package; the greeter finds the theme in it or in its share/icons.
       '';
     };
 
@@ -162,7 +162,7 @@ in
       }
 
       (lib.mkIf (cfg.cursorTheme.package != null) {
-        services.displayManager.noctalia-greeter.settings.cursor.path = lib.mkDefault "${cfg.cursorTheme.package}/share/icons";
+        services.displayManager.noctalia-greeter.settings.cursor.path = lib.mkDefault "${cfg.cursorTheme.package}";
       })
 
       (lib.mkIf (cfg.passwordless-sync-users != [ ]) {

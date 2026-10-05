@@ -146,6 +146,8 @@ size = 24
 path = "/usr/share/icons"
 ```
 
+If the path contains no cursor theme directory (`<path>/*/cursors`), the greeter also tries `<path>/share/icons`, so a package or prefix root (such as a Nix store path) works too. If neither contains the theme, a warning is logged and the path is used as given.
+
 The path must be readable by the greetd session user. A cursor theme installed only in your personal home directory is normally unavailable to the greeter.
 
 If the named theme cannot be loaded, wlroots uses its built-in fallback. That
