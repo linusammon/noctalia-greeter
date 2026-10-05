@@ -197,18 +197,17 @@ services.displayManager.noctalia-greeter = {
 
 ### Project flake module
 
-The project flake module provides a `cursorTheme.package` convenience option. It fills `cursor.path`, while other cursor values like `theme` and `size` go under `settings.cursor`:
+Configure the greeter through `settings`:
 
 ```nix
 services.displayManager.noctalia-greeter = {
   enable = true;
 
-  cursorTheme.package = pkgs.bibata-cursors;
-
   settings = {
     cursor = {
       theme = "Bibata-Modern-Ice";
       size = 24;
+      path = pkgs.bibata-cursors;
     };
     keyboard = {
       layout = "us,cz";

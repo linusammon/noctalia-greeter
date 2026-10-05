@@ -58,8 +58,9 @@ in
     }
     // {
       description = ''
-        Cursor theme package. Defaults settings.cursor.path to
-        the package; the greeter finds the theme in it or in its share/icons.
+        Deprecated: set settings.cursor.path to the package instead, for example
+        `settings.cursor.path = pkgs.bibata-cursors;`. The greeter finds the theme
+        in the path or in its share/icons.
       '';
     };
 
@@ -162,7 +163,11 @@ in
       }
 
       (lib.mkIf (cfg.cursorTheme.package != null) {
-        services.displayManager.noctalia-greeter.settings.cursor.path = lib.mkDefault "${cfg.cursorTheme.package}";
+        warnings = [
+          "services.displayManager.noctalia-greeter.cursorTheme.package is deprecated; set services.displayManager.noctalia-greeter.settings.cursor.path instead."
+        ];
+
+        services.displayManager.noctalia-greeter.settings.cursor.path = lib.mkDefault cfg.cursorTheme.package;
       })
 
       (lib.mkIf (cfg.passwordless-sync-users != [ ]) {
